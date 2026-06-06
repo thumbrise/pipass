@@ -12,8 +12,7 @@ type Template struct {
 	Version int
 }
 
-// Config represents Just Data (Black Box / Scalar).
-// It is NOT registered in the pipeline node registry.
+// Config represents an observable node registered in the pipeline.
 type Config struct {
 	Scope     string
 	Variables map[string]interface{}
