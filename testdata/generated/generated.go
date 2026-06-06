@@ -4,6 +4,7 @@ package generated
 
 import (
 	pipass "github.com/thumbrise/pipass"
+	"reflect"
 	"strconv"
 )
 
@@ -98,14 +99,16 @@ func (p *StagePipePass) AppendActors(value ActorPass, reason string) {
 	if p.actors == nil {
 		p.actors = []*ActorPipePass{}
 	}
-	concreteChild := value.(*ActorPipePass)
-	p.actors = append(p.actors, concreteChild)
-	idx := len(p.actors) - 1
-	childPath := p._path + ".Actors[" + strconv.Itoa(idx) + "]"
-	concreteChild._path = childPath
-	concreteChild._ledger = p._ledger
-	if p._ledger != nil {
-		p._ledger.Log(childPath, reason, nil, concreteChild)
+	concreteChild, ok := value.(*ActorPipePass)
+	if ok && concreteChild != nil {
+		p.actors = append(p.actors, concreteChild)
+		idx := len(p.actors) - 1
+		childPath := p._path + ".Actors[" + strconv.Itoa(idx) + "]"
+		concreteChild._path = childPath
+		concreteChild._ledger = p._ledger
+		if p._ledger != nil {
+			p._ledger.Log(childPath, reason, nil, concreteChild)
+		}
 	}
 }
 func (p *StagePipePass) Triggers() []TriggerPass {
@@ -137,14 +140,16 @@ func (p *StagePipePass) AppendTriggers(value TriggerPass, reason string) {
 	if p.triggers == nil {
 		p.triggers = []*TriggerPipePass{}
 	}
-	concreteChild := value.(*TriggerPipePass)
-	p.triggers = append(p.triggers, concreteChild)
-	idx := len(p.triggers) - 1
-	childPath := p._path + ".Triggers[" + strconv.Itoa(idx) + "]"
-	concreteChild._path = childPath
-	concreteChild._ledger = p._ledger
-	if p._ledger != nil {
-		p._ledger.Log(childPath, reason, nil, concreteChild)
+	concreteChild, ok := value.(*TriggerPipePass)
+	if ok && concreteChild != nil {
+		p.triggers = append(p.triggers, concreteChild)
+		idx := len(p.triggers) - 1
+		childPath := p._path + ".Triggers[" + strconv.Itoa(idx) + "]"
+		concreteChild._path = childPath
+		concreteChild._ledger = p._ledger
+		if p._ledger != nil {
+			p._ledger.Log(childPath, reason, nil, concreteChild)
+		}
 	}
 }
 func (p *StagePipePass) Settings() interface{} {
@@ -245,7 +250,7 @@ func (p *ActorPipePass) SetInventoryKey(key string, value interface{}, reason st
 	if p.inventory == nil {
 		p.inventory = make(map[string]interface{})
 	}
-	if p.inventory[key] == value {
+	if reflect.DeepEqual(p.inventory[key], value) {
 		return
 	}
 	prev := p.inventory[key]
@@ -333,13 +338,15 @@ func (p *TriggerPipePass) AppendChildren(value TriggerPass, reason string) {
 	if p.children == nil {
 		p.children = []*TriggerPipePass{}
 	}
-	concreteChild := value.(*TriggerPipePass)
-	p.children = append(p.children, concreteChild)
-	idx := len(p.children) - 1
-	childPath := p._path + ".Children[" + strconv.Itoa(idx) + "]"
-	concreteChild._path = childPath
-	concreteChild._ledger = p._ledger
-	if p._ledger != nil {
-		p._ledger.Log(childPath, reason, nil, concreteChild)
+	concreteChild, ok := value.(*TriggerPipePass)
+	if ok && concreteChild != nil {
+		p.children = append(p.children, concreteChild)
+		idx := len(p.children) - 1
+		childPath := p._path + ".Children[" + strconv.Itoa(idx) + "]"
+		concreteChild._path = childPath
+		concreteChild._ledger = p._ledger
+		if p._ledger != nil {
+			p._ledger.Log(childPath, reason, nil, concreteChild)
+		}
 	}
 }

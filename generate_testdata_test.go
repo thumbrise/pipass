@@ -3,7 +3,6 @@
 package pipass_test
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,23 +21,23 @@ func TestGenerateScaffolding(t *testing.T) {
 		testdata.Trigger{},
 	)
 	if err != nil {
-		log.Fatalf("pipeline test compile failure: %v", err)
+		t.Fatalf("pipeline test compile failure: %v", err)
 	}
 
 	_, currentFile, _, ok := runtime.Caller(0)
 	if !ok {
-		log.Fatalf("failed to resolve caller filepath")
+		t.Fatalf("failed to resolve caller filepath")
 	}
 
 	projectRoot := filepath.Dir(currentFile)
 	targetDir := filepath.Join(projectRoot, "testdata", "generated")
 
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		log.Fatalf("failed to create target directory: %v", err)
+		t.Fatalf("failed to create target directory: %v", err)
 	}
 
 	err = os.WriteFile(filepath.Join(targetDir, "generated.go"), out, 0600)
 	if err != nil {
-		log.Fatalf("failed to dump monolithic test scaffolding: %v", err)
+		t.Fatalf("failed to dump monolithic test scaffolding: %v", err)
 	}
 }

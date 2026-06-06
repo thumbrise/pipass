@@ -38,7 +38,7 @@ func TestPipassComplexHierarchy(t *testing.T) {
 	trigger.SetEvent("OnEnter", "defining trigger condition")
 	stage.AppendTriggers(trigger, "attaching a trigger to the stage")
 
-	if ledger.paths[1] != "stage.Actors[0]" || ledger.paths[2] != "stage.Triggers[0]" {
+	if len(ledger.paths) < 3 || ledger.paths[1] != "stage.Actors[0]" || ledger.paths[2] != "stage.Triggers[0]" {
 		t.Errorf("parallel rail tracking indices calculated incorrectly: %v", ledger.paths)
 	}
 
@@ -51,7 +51,7 @@ func TestPipassComplexHierarchy(t *testing.T) {
 		t.Fatalf("MapActors failed: %v", err)
 	}
 
-	if ledger.paths[3] != "stage.Actors[0].Role" {
+	if len(ledger.paths) < 4 || ledger.paths[3] != "stage.Actors[0].Role" {
 		t.Errorf("expected contextual path 'stage.Actors[0].Role', got: %v", ledger.paths)
 	}
 
@@ -70,7 +70,7 @@ func TestPipassComplexHierarchy(t *testing.T) {
 		t.Fatalf("MapTriggers failed: %v", err)
 	}
 
-	if ledger.paths[4] != "stage.Triggers[0].Children[0]" {
+	if len(ledger.paths) < 5 || ledger.paths[4] != "stage.Triggers[0].Children[0]" {
 		t.Errorf("recursive child tracking index or path calculated incorrectly: %v", ledger.paths)
 	}
 }
