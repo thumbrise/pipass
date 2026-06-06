@@ -1,15 +1,21 @@
 package userland
 
 import (
-	"log/slog"
 	"time"
 )
 
 type Person struct {
-	logger    *slog.Logger
-	email     string
-	birthdate time.Time
-	friends   []Person
-	meta      map[string]any
-	mad       bool
+	Email     string
+	Birthdate time.Time
+	Friends   []Person
+	Meta      map[string]any
+	Pets      []Pet
+	Mad       bool
+}
+
+type Pet struct {
+	Name       string
+	Friends    []Pet
+	Owner      Person
+	PrevOwners []Person
 }
