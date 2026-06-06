@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("MkdirAll: %v", err)
 	}
 
-	err = os.WriteFile("generated/generated.go", out, 0600)
+	err = os.WriteFile("generated/generated.go", out, 0644)
 	if err != nil {
 		log.Fatalf("WriteFile: %v", err)
 	}

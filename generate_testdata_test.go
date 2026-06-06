@@ -37,7 +37,7 @@ func TestGenerateScaffolding(t *testing.T) {
 		t.Fatalf("failed to create target directory: %v", err)
 	}
 
-	err = os.WriteFile(filepath.Join(targetDir, "generated.go"), out, 0600)
+	err = os.WriteFile(filepath.Join(targetDir, "generated.go"), out, 0644)
 	if err != nil {
 		t.Fatalf("failed to dump monolithic test scaffolding: %v", err)
 	}
