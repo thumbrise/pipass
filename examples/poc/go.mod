@@ -1,4 +1,4 @@
-module github.com/thumbrise/pipass/examples
+module github.com/thumbrise/pipass/examples/poc
 
 go 1.26
 
