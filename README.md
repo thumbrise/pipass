@@ -34,7 +34,7 @@ pipass gives you observability at the struct field level with zero runtime refle
 | **Type preservation** | `*bool`, `*int`, `*string`, named types, `time.Time` — exact types, not `interface{}` |
 | **Slice nodes** | `[]Player` → `MapPlayers(fn)` / `AppendPlayers(value, reason)` |
 | **Singular nodes** | Any registered struct becomes an observable node with its own `_path`/`_ledger` |
-| **Maps** | `map[string]string` → `GetKey(key) string` / `SetKey(key, value, reason)` |
+| **Maps** | `map[string]string` → `Key(key) string` / `SetKey(key, value, reason)` |
 | **Ledger** | Pluggable — built-in `PrintLedger` or your own implementation |
 | **Path propagation** | Automatic — `session.Players[0].Stats.HP` is tracked without manual path strings |
 | **Idempotency guard** | Setters skip logging when value doesn't change (`reflect.DeepEqual`) |
@@ -47,7 +47,7 @@ pipass gives you observability at the struct field level with zero runtime refle
 - Types are analyzed at compile‑time via `reflect` — no runtime overhead
 - Add the generated file to version control; regenerate when your DTOs change
 - `pipass.Compile` takes zero‑value exemplars, not factory functions
-- Maps are exposed via `Key(key)` / `SetKey(key, value, reason)` naming — the key type is always `string`
+- Maps are exposed via `Key(key)` / `SetKey(key, value, reason)` naming — the key type matches the original map key type (`string`, `int`, etc.)
 - Mutations before a singular node is attached are not logged (pass a ledger to the constructor if needed)
 
 ## License
