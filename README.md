@@ -1,6 +1,52 @@
 # pipass
 
-Compile-time observable graph generator for Go.
+Compile-time type-safe pipeline pass wrappers generator for Go.
+
+## What you get
+
+You define:
+
+```go
+type Score int64
+
+type Player struct {
+    Name   string
+    Score  Score
+    Active *bool
+}
+
+type Session struct {
+    Title    string
+    Host     Player
+    Players  []Player
+    Metadata map[string]string
+}
+```
+
+Generated API overview:
+
+```
+PlayerPass
+    Name() string
+    SetName(value string, reason string)
+    Score() Score
+    SetScore(value Score, reason string)
+    Active() *bool
+    SetActive(value *bool, reason string)
+
+SessionPass
+    Title() string
+    SetTitle(value string, reason string)
+    Host() PlayerPass
+    SetHost(value PlayerPass, reason string)
+    Players() []PlayerPass
+    MapPlayers(fn func(PlayerPass) error) error
+    AppendPlayers(value PlayerPass, reason string)
+    MetadataKey(key string) string
+    SetMetadataKey(key string, value string, reason string)
+```
+
+Every mutation flows through Ledger with path tracking, idempotency guard, and a human-readable reason. Named types like `Score` are preserved as-is.
 
 ## Description
 
@@ -29,17 +75,17 @@ pipass gives you observability at the struct field level with zero runtime refle
 
 ## What
 
-| Feature | Example |
-|---------|---------|
+| Feature               | Example                                                                               |
+|-----------------------|---------------------------------------------------------------------------------------|
 | **Type preservation** | `*bool`, `*int`, `*string`, named types, `time.Time` — exact types, not `interface{}` |
-| **Slice nodes** | `[]Player` → `MapPlayers(fn)` / `AppendPlayers(value, reason)` |
-| **Singular nodes** | Any registered struct becomes an observable node with its own `_path`/`_ledger` |
-| **Maps** | `map[string]string` → `Key(key) string` / `SetKey(key, value, reason)` |
-| **Ledger** | Pluggable — built-in `PrintLedger` or your own implementation |
-| **Path propagation** | Automatic — `session.Players[0].Stats.HP` is tracked without manual path strings |
-| **Idempotency guard** | Setters skip logging when value doesn't change (`reflect.DeepEqual`) |
-| **Go 1.26** | Full support for `new(expr)` syntax for pointer fields |
-| **No codec** | Plain Go structs in, plain Go structs out |
+| **Slice nodes**       | `[]Player` → `MapPlayers(fn)` / `AppendPlayers(value, reason)`                        |
+| **Singular nodes**    | Any registered struct becomes an observable node with its own `_path`/`_ledger`       |
+| **Maps**              | `map[string]string` → `Key(key) string` / `SetKey(key, value, reason)`                |
+| **Ledger**            | Pluggable — built-in `PrintLedger` or your own implementation                         |
+| **Path propagation**  | Automatic — `session.Players[0].Stats.HP` is tracked without manual path strings      |
+| **Idempotency guard** | Setters skip logging when value doesn't change (`reflect.DeepEqual`)                  |
+| **Go 1.26**           | Full support for `new(expr)` syntax for pointer fields                                |
+| **No codec**          | Plain Go structs in, plain Go structs out                                             |
 
 ## Details
 
@@ -49,6 +95,11 @@ pipass gives you observability at the struct field level with zero runtime refle
 - `pipass.Compile` takes zero‑value exemplars, not factory functions
 - Maps are exposed via `Key(key)` / `SetKey(key, value, reason)` naming — the key type matches the original map key type (`string`, `int`, etc.)
 - Mutations before a singular node is attached are not logged (pass a ledger to the constructor if needed)
+
+## Examples
+
+- [examples/game](examples/game) — full demo with pointers, slices, maps, singular nodes, and ledger
+- [examples/poc](examples/poc) — minimal proof-of-concept with Person and Pet
 
 ## License
 
