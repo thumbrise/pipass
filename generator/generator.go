@@ -177,14 +177,16 @@ func generateNodeMethods(f *jen.File, structName string, field Field) {
 			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(
 				jen.Id("p").Dot(pName).Op("=").Index().Op("*").Id(field.ElemTypeName+"PipePass").Values(),
 			),
-			jen.Id("concreteChild").Op(":=").Id("value").Assert(jen.Op("*").Id(field.ElemTypeName+"PipePass")),
-			jen.Id("p").Dot(pName).Op("=").Id("append").Params(jen.Id("p").Dot(pName), jen.Id("concreteChild")),
-			jen.Id("idx").Op(":=").Len(jen.Id("p").Dot(pName)).Op("-").Lit(1),
-			jen.Id("childPath").Op(":=").Id("p").Dot("_path").Op("+").Lit("."+field.Name+"[").Op("+").Qual("strconv", "Itoa").Params(jen.Id("idx")).Op("+").Lit("]"),
-			jen.Id("concreteChild").Dot("_path").Op("=").Id("childPath"),
-			jen.Id("concreteChild").Dot("_ledger").Op("=").Id("p").Dot("_ledger"),
-			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
-				jen.Id("p").Dot("_ledger").Dot("Log").Params(jen.Id("childPath"), jen.Id("reason"), jen.Nil(), jen.Id("concreteChild")),
+			jen.List(jen.Id("concreteChild"), jen.Id("ok")).Op(":=").Id("value").Assert(jen.Op("*").Id(field.ElemTypeName+"PipePass")),
+			jen.If(jen.Id("ok").Op("&&").Id("concreteChild").Op("!=").Nil()).Block(
+				jen.Id("p").Dot(pName).Op("=").Id("append").Params(jen.Id("p").Dot(pName), jen.Id("concreteChild")),
+				jen.Id("idx").Op(":=").Len(jen.Id("p").Dot(pName)).Op("-").Lit(1),
+				jen.Id("childPath").Op(":=").Id("p").Dot("_path").Op("+").Lit("."+field.Name+"[").Op("+").Qual("strconv", "Itoa").Params(jen.Id("idx")).Op("+").Lit("]"),
+				jen.Id("concreteChild").Dot("_path").Op("=").Id("childPath"),
+				jen.Id("concreteChild").Dot("_ledger").Op("=").Id("p").Dot("_ledger"),
+				jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
+					jen.Id("p").Dot("_ledger").Dot("Log").Params(jen.Id("childPath"), jen.Id("reason"), jen.Nil(), jen.Id("concreteChild")),
+				),
 			),
 		)
 }
@@ -207,7 +209,7 @@ func generateMapMethods(f *jen.File, structName string, field Field) {
 			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(
 				jen.Id("p").Dot(pName).Op("=").Make(fieldStatement(field, false)),
 			),
-			jen.If(jen.Id("p").Dot(pName).Index(jen.Id("key")).Op("==").Id("value")).Block(jen.Return()),
+			jen.If(jen.Qual("reflect", "DeepEqual").Params(jen.Id("p").Dot(pName).Index(jen.Id("key")), jen.Id("value"))).Block(jen.Return()),
 			jen.Id("prev").Op(":=").Id("p").Dot(pName).Index(jen.Id("key")),
 			jen.Id("p").Dot(pName).Index(jen.Id("key")).Op("=").Id("value"),
 			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
