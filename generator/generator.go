@@ -260,6 +260,8 @@ func generateSingularNodeMethods(f *jen.File, structName string, field Field) {
 	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Set"+field.Name).
 		Params(jen.Id("value").Id(field.ElemTypeName+"Pass"), jen.Id("reason").String()).
 		Block(
+			jen.If(jen.Qual("reflect", "DeepEqual").Params(jen.Id("p").Dot(pName), jen.Id("value"))).Block(jen.Return()),
+			jen.Id("prev").Op(":=").Id("p").Dot(pName),
 			jen.Id("concrete").Op(",").Id("ok").Op(":=").Id("value").Assert(jen.Op("*").Id(field.ElemTypeName+"PipePass")),
 			jen.If(jen.Id("ok").Op("&&").Id("concrete").Op("!=").Nil()).Block(
 				jen.Id("childPath").Op(":=").Id("p").Dot("_path").Op("+").Lit("."+field.Name),
@@ -267,7 +269,7 @@ func generateSingularNodeMethods(f *jen.File, structName string, field Field) {
 				jen.Id("concrete").Dot("_ledger").Op("=").Id("p").Dot("_ledger"),
 				jen.Id("p").Dot(pName).Op("=").Id("concrete"),
 				jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
-					jen.Id("p").Dot("_ledger").Dot("Log").Params(jen.Id("childPath"), jen.Id("reason"), jen.Nil(), jen.Id("concrete")),
+					jen.Id("p").Dot("_ledger").Dot("Log").Params(jen.Id("childPath"), jen.Id("reason"), jen.Id("prev"), jen.Id("concrete")),
 				),
 			),
 		)

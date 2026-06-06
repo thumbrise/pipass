@@ -171,6 +171,10 @@ func (p *StagePipePass) Settings() ConfigPass {
 	return p.settings
 }
 func (p *StagePipePass) SetSettings(value ConfigPass, reason string) {
+	if reflect.DeepEqual(p.settings, value) {
+		return
+	}
+	prev := p.settings
 	concrete, ok := value.(*ConfigPipePass)
 	if ok && concrete != nil {
 		childPath := p._path + ".Settings"
@@ -178,7 +182,7 @@ func (p *StagePipePass) SetSettings(value ConfigPass, reason string) {
 		concrete._ledger = p._ledger
 		p.settings = concrete
 		if p._ledger != nil {
-			p._ledger.Log(childPath, reason, nil, concrete)
+			p._ledger.Log(childPath, reason, prev, concrete)
 		}
 	}
 }
