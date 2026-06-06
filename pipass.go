@@ -81,6 +81,15 @@ func Compile(packageName string, root any, nodes ...any) ([]byte, error) {
 				}
 			}
 
+			// singular node: *RegisteredStruct (pointer-to-registered)
+			if field.Type.Kind() == reflect.Pointer &&
+				field.Type.Elem().Kind() == reflect.Struct &&
+				registry[field.Type.Elem().PkgPath()+"."+field.Type.Elem().Name()] {
+				fieldInfo.IsNode = true
+				fieldInfo.ElemTypeName = field.Type.Elem().Name()
+			}
+
+			// singular node: RegisteredStruct
 			if field.Type.Kind() == reflect.Struct && registry[field.Type.PkgPath()+"."+field.Type.Name()] {
 				fieldInfo.IsNode = true
 				fieldInfo.ElemTypeName = field.Type.Name()
