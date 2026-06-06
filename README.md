@@ -1,5 +1,12 @@
 # pipass
 
+[![CI](https://github.com/thumbrise/pipass/actions/workflows/ci.yml/badge.svg)](https://github.com/thumbrise/pipass/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/thumbrise/pipass.svg)](https://pkg.go.dev/github.com/thumbrise/pipass)
+[![Latest Release](https://img.shields.io/github/v/release/thumbrise/pipass?label=latest&color=blue)](https://github.com/thumbrise/pipass/releases)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/thumbrise/pipass/badge.svg?branch=main)](https://coveralls.io/github/thumbrise/pipass?branch=main)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thumbrise/pipass)](https://goreportcard.com/report/github.com/thumbrise/pipass)
+
 Compile-time type-safe pipeline pass wrappers generator for Go.
 
 ## What you get
