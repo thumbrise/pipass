@@ -14,7 +14,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Test with coverage
-        run: go test ./... -tags=test -coverprofile=coverage.out
+        run: go test ./... -coverprofile=coverage.out
 
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@v2

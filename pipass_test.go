@@ -1,5 +1,3 @@
-//go:build test
-
 package pipass_test
 
 import (
@@ -20,6 +18,7 @@ func (m *MockLedger) Log(path string, reason string, prev, next any) {
 	m.paths = append(m.paths, path)
 }
 
+//nolint:cyclop
 func TestPipassComplexHierarchy(t *testing.T) {
 	ledger := &MockLedger{}
 
@@ -48,6 +47,7 @@ func TestPipassComplexHierarchy(t *testing.T) {
 	// 3. Validate context path propagation inside independent Map traversals
 	err := stage.MapActors(func(a generated.ActorPass) error {
 		a.SetRole("Detective", "assigning role via map traversal")
+
 		return nil
 	})
 	if err != nil {
@@ -67,6 +67,7 @@ func TestPipassComplexHierarchy(t *testing.T) {
 		if p, ok := parent.(*generated.TriggerPipePass); ok {
 			p.AppendChildren(childTrigger, "birthing a deep nested sub-trigger")
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -83,6 +84,7 @@ func TestGeneratedTypePreservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	src := string(out)
 
 	tests := []struct {
