@@ -66,7 +66,7 @@ func Compile(packageName string, root any, nodes ...any) ([]byte, error) {
 
 			fieldInfo := generator.Field{
 				Name: field.Name,
-				Kind: field.Type.Kind().String(),
+				Type: field.Type,
 			}
 
 			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Map {
@@ -79,6 +79,11 @@ func Compile(packageName string, root any, nodes ...any) ([]byte, error) {
 				if field.Type.Kind() == reflect.Slice && registry[elemType.PkgPath()+"."+elemType.Name()] {
 					fieldInfo.IsNode = true
 				}
+			}
+
+			if field.Type.Kind() == reflect.Struct && registry[field.Type.PkgPath()+"."+field.Type.Name()] {
+				fieldInfo.IsNode = true
+				fieldInfo.ElemTypeName = field.Type.Name()
 			}
 
 			entity.Fields = append(entity.Fields, fieldInfo)

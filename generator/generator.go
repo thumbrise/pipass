@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -11,7 +12,7 @@ var ErrRender = errors.New("render error")
 
 type Field struct {
 	Name         string
-	Kind         string
+	Type         reflect.Type
 	ElemTypeName string
 	IsNode       bool
 }
@@ -51,42 +52,94 @@ func privateName(name string) string {
 	return strings.ToLower(name[:1]) + name[1:]
 }
 
-func fieldStatement(field Field, isInterface bool) *jen.Statement {
-	if field.IsNode {
-		if isInterface {
-			return jen.Index().Id(field.ElemTypeName + "Pass")
-		}
-
-		return jen.Index().Op("*").Id(field.ElemTypeName + "PipePass")
+//nolint:cyclop,exhaustive,funlen
+func typeToStatement(t reflect.Type) *jen.Statement {
+	// Check named types BEFORE Kind switch to preserve type identity
+	// (e.g. Score -> testdata.Score, not float64)
+	if pkg := t.PkgPath(); pkg != "" {
+		return jen.Qual(pkg, t.Name())
 	}
 
-	switch field.Kind {
-	case "string":
+	if name := t.Name(); name != "" {
+		return jen.Id(name)
+	}
+
+	switch t.Kind() {
+	case reflect.Pointer:
+		return jen.Op("*").Add(typeToStatement(t.Elem()))
+	case reflect.Slice:
+		return jen.Index().Add(typeToStatement(t.Elem()))
+	case reflect.Map:
+		return jen.Map(typeToStatement(t.Key())).Add(typeToStatement(t.Elem()))
+	case reflect.String:
 		return jen.String()
-	case "bool":
+	case reflect.Bool:
 		return jen.Bool()
-	case "int":
+	case reflect.Int:
 		return jen.Int()
-	case "int64":
+	case reflect.Int8:
+		return jen.Int8()
+	case reflect.Int16:
+		return jen.Int16()
+	case reflect.Int32:
+		return jen.Int32()
+	case reflect.Int64:
 		return jen.Int64()
-	case "map": //nolint:goconst
-		return jen.Map(jen.String()).Interface()
+	case reflect.Uint:
+		return jen.Uint()
+	case reflect.Uint8:
+		return jen.Uint8()
+	case reflect.Uint16:
+		return jen.Uint16()
+	case reflect.Uint32:
+		return jen.Uint32()
+	case reflect.Uint64:
+		return jen.Uint64()
+	case reflect.Float32:
+		return jen.Float32()
+	case reflect.Float64:
+		return jen.Float64()
+	case reflect.Interface:
+		return jen.Interface()
 	default:
 		return jen.Interface()
 	}
+}
+
+func fieldStatement(field Field, isInterface bool) *jen.Statement {
+	if field.IsNode {
+		if field.Type.Kind() == reflect.Slice {
+			if isInterface {
+				return jen.Index().Id(field.ElemTypeName + "Pass")
+			}
+
+			return jen.Index().Op("*").Id(field.ElemTypeName + "PipePass")
+		}
+
+		if isInterface {
+			return jen.Id(field.ElemTypeName + "Pass")
+		}
+
+		return jen.Op("*").Id(field.ElemTypeName + "PipePass")
+	}
+
+	return typeToStatement(field.Type)
 }
 
 func generateInterface(f *jen.File, interfaceName string, root *Entity) {
 	f.Type().Id(interfaceName).InterfaceFunc(func(grp *jen.Group) {
 		for _, field := range root.Fields {
 			switch {
-			case field.IsNode:
+			case field.IsNode && field.Type.Kind() == reflect.Slice:
 				grp.Id(field.Name).Params().Add(fieldStatement(field, true))
 				grp.Id("Map" + field.Name).Params(jen.Func().Params(jen.Id("child").Id(field.ElemTypeName + "Pass")).Error()).Error()
 				grp.Id("Append"+field.Name).Params(jen.Id("value").Id(field.ElemTypeName+"Pass"), jen.Id("reason").String())
-			case field.Kind == "map":
-				grp.Id(field.Name + "Key").Params(jen.Id("key").String()).Interface()
-				grp.Id("Set"+field.Name+"Key").Params(jen.Id("key").String(), jen.Id("value").Interface(), jen.Id("reason").String())
+			case field.IsNode:
+				grp.Id(field.Name).Params().Add(fieldStatement(field, true))
+				grp.Id("Set"+field.Name).Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String())
+			case field.Type.Kind() == reflect.Map:
+				grp.Id(field.Name + "Key").Params(jen.Id("key").String()).Add(typeToStatement(field.Type.Elem()))
+				grp.Id("Set"+field.Name+"Key").Params(jen.Id("key").String(), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String())
 			default:
 				grp.Id(field.Name).Params().Add(fieldStatement(field, true))
 				grp.Id("Set"+field.Name).Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String())
@@ -124,9 +177,11 @@ func generateConstructor(f *jen.File, structName string) {
 func generateAccessors(f *jen.File, structName string, root *Entity) {
 	for _, field := range root.Fields {
 		switch {
-		case field.IsNode:
+		case field.IsNode && field.Type.Kind() == reflect.Slice:
 			generateNodeMethods(f, structName, field)
-		case field.Kind == "map":
+		case field.IsNode:
+			generateSingularNodeMethods(f, structName, field)
+		case field.Type.Kind() == reflect.Map:
 			generateMapMethods(f, structName, field)
 		default:
 			generateScalarMethods(f, structName, field)
@@ -191,20 +246,46 @@ func generateNodeMethods(f *jen.File, structName string, field Field) {
 		)
 }
 
+func generateSingularNodeMethods(f *jen.File, structName string, field Field) {
+	pName := privateName(field.Name)
+
+	// Getter
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id(field.Name).Params().Add(fieldStatement(field, true)).
+		Block(
+			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(jen.Return(jen.Nil())),
+			jen.Return(jen.Id("p").Dot(pName)),
+		)
+
+	// Setter
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Set"+field.Name).
+		Params(jen.Id("value").Id(field.ElemTypeName+"Pass"), jen.Id("reason").String()).
+		Block(
+			jen.Id("concrete").Op(",").Id("ok").Op(":=").Id("value").Assert(jen.Op("*").Id(field.ElemTypeName+"PipePass")),
+			jen.If(jen.Id("ok").Op("&&").Id("concrete").Op("!=").Nil()).Block(
+				jen.Id("childPath").Op(":=").Id("p").Dot("_path").Op("+").Lit("."+field.Name),
+				jen.Id("concrete").Dot("_path").Op("=").Id("childPath"),
+				jen.Id("concrete").Dot("_ledger").Op("=").Id("p").Dot("_ledger"),
+				jen.Id("p").Dot(pName).Op("=").Id("concrete"),
+				jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
+					jen.Id("p").Dot("_ledger").Dot("Log").Params(jen.Id("childPath"), jen.Id("reason"), jen.Nil(), jen.Id("concrete")),
+				),
+			),
+		)
+}
+
 func generateMapMethods(f *jen.File, structName string, field Field) {
 	pName := privateName(field.Name)
 
 	// Key Getter
-	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id(field.Name+"Key").
-		Params(jen.Id("key").String()).Interface().
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id(field.Name + "Key").
+		Params(jen.Id("key").String()).Add(typeToStatement(field.Type.Elem())).
 		Block(
-			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(jen.Return(jen.Nil())),
 			jen.Return(jen.Id("p").Dot(pName).Index(jen.Id("key"))),
 		)
 
 	// Key Setter
 	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Set"+field.Name+"Key").
-		Params(jen.Id("key").String(), jen.Id("value").Interface(), jen.Id("reason").String()).
+		Params(jen.Id("key").String(), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String()).
 		Block(
 			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(
 				jen.Id("p").Dot(pName).Op("=").Make(fieldStatement(field, false)),
@@ -234,7 +315,7 @@ func generateScalarMethods(f *jen.File, structName string, field Field) {
 	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Set"+field.Name).
 		Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String()).
 		Block(
-			jen.If(jen.Id("p").Dot(pName).Op("==").Id("value")).Block(jen.Return()),
+			jen.If(jen.Qual("reflect", "DeepEqual").Params(jen.Id("p").Dot(pName), jen.Id("value"))).Block(jen.Return()),
 			jen.Id("prev").Op(":=").Id("p").Dot(pName),
 			jen.Id("p").Dot(pName).Op("=").Id("value"),
 			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
