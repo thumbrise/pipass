@@ -102,6 +102,8 @@ func TestGeneratedTypePreservation(t *testing.T) {
 		{"SetSettings singular", "SetSettings(value ConfigPass, reason string)"},
 		{"Config.Scope -> string", "Scope() string"},
 		{"Config.SetScope", "SetScope(value string, reason string)"},
+		{"IndexKey -> int key", "IndexKey(key int) string"},
+		{"SetIndexKey -> int key", "SetIndexKey(key int, value string, reason string)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

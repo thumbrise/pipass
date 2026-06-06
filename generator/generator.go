@@ -138,8 +138,8 @@ func generateInterface(f *jen.File, interfaceName string, root *Entity) {
 				grp.Id(field.Name).Params().Add(fieldStatement(field, true))
 				grp.Id("Set"+field.Name).Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String())
 			case field.Type.Kind() == reflect.Map:
-				grp.Id(field.Name + "Key").Params(jen.Id("key").String()).Add(typeToStatement(field.Type.Elem()))
-				grp.Id("Set"+field.Name+"Key").Params(jen.Id("key").String(), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String())
+				grp.Id(field.Name + "Key").Params(jen.Id("key").Add(typeToStatement(field.Type.Key()))).Add(typeToStatement(field.Type.Elem()))
+				grp.Id("Set"+field.Name+"Key").Params(jen.Id("key").Add(typeToStatement(field.Type.Key())), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String())
 			default:
 				grp.Id(field.Name).Params().Add(fieldStatement(field, true))
 				grp.Id("Set"+field.Name).Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String())
@@ -278,14 +278,14 @@ func generateMapMethods(f *jen.File, structName string, field Field) {
 
 	// Key Getter
 	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id(field.Name + "Key").
-		Params(jen.Id("key").String()).Add(typeToStatement(field.Type.Elem())).
+		Params(jen.Id("key").Add(typeToStatement(field.Type.Key()))).Add(typeToStatement(field.Type.Elem())).
 		Block(
 			jen.Return(jen.Id("p").Dot(pName).Index(jen.Id("key"))),
 		)
 
 	// Key Setter
 	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Set"+field.Name+"Key").
-		Params(jen.Id("key").String(), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String()).
+		Params(jen.Id("key").Add(typeToStatement(field.Type.Key())), jen.Id("value").Add(typeToStatement(field.Type.Elem())), jen.Id("reason").String()).
 		Block(
 			jen.If(jen.Id("p").Dot(pName).Op("==").Nil()).Block(
 				jen.Id("p").Dot(pName).Op("=").Make(fieldStatement(field, false)),
@@ -295,7 +295,7 @@ func generateMapMethods(f *jen.File, structName string, field Field) {
 			jen.Id("p").Dot(pName).Index(jen.Id("key")).Op("=").Id("value"),
 			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
 				jen.Id("p").Dot("_ledger").Dot("Log").Params(
-					jen.Id("p").Dot("_path").Op("+").Lit("."+field.Name+"[\"").Op("+").Id("key").Op("+").Lit("\"]"),
+					jen.Id("p").Dot("_path").Op("+").Lit("."+field.Name+"[").Op("+").Qual("fmt", "Sprint").Params(jen.Id("key")).Op("+").Lit("]"),
 					jen.Id("reason"),
 					jen.Id("prev"),
 					jen.Id("value"),

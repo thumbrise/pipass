@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"fmt"
 	pipass "github.com/thumbrise/pipass"
 	testdata "github.com/thumbrise/pipass/testdata"
 	"reflect"
@@ -314,7 +315,7 @@ func (p *ActorPipePass) SetInventoryKey(key string, value interface{}, reason st
 	prev := p.inventory[key]
 	p.inventory[key] = value
 	if p._ledger != nil {
-		p._ledger.Log(p._path+".Inventory[\""+key+"\"]", reason, prev, value)
+		p._ledger.Log(p._path+".Inventory["+fmt.Sprint(key)+"]", reason, prev, value)
 	}
 }
 func (p *ActorPipePass) Nickname() *string {
@@ -356,6 +357,8 @@ type TriggerPass interface {
 	SetMetadataKey(key string, value string, reason string)
 	Priority() *int
 	SetPriority(value *int, reason string)
+	IndexKey(key int) string
+	SetIndexKey(key int, value string, reason string)
 }
 type TriggerPipePass struct {
 	_path    string
@@ -365,6 +368,7 @@ type TriggerPipePass struct {
 	children []*TriggerPipePass
 	metadata map[string]string
 	priority *int
+	index    map[int]string
 }
 
 func NewTriggerPipePass(path string, ledger pipass.Ledger) *TriggerPipePass {
@@ -453,7 +457,7 @@ func (p *TriggerPipePass) SetMetadataKey(key string, value string, reason string
 	prev := p.metadata[key]
 	p.metadata[key] = value
 	if p._ledger != nil {
-		p._ledger.Log(p._path+".Metadata[\""+key+"\"]", reason, prev, value)
+		p._ledger.Log(p._path+".Metadata["+fmt.Sprint(key)+"]", reason, prev, value)
 	}
 }
 func (p *TriggerPipePass) Priority() *int {
@@ -467,6 +471,22 @@ func (p *TriggerPipePass) SetPriority(value *int, reason string) {
 	p.priority = value
 	if p._ledger != nil {
 		p._ledger.Log(p._path+".Priority", reason, prev, value)
+	}
+}
+func (p *TriggerPipePass) IndexKey(key int) string {
+	return p.index[key]
+}
+func (p *TriggerPipePass) SetIndexKey(key int, value string, reason string) {
+	if p.index == nil {
+		p.index = make(map[int]string)
+	}
+	if reflect.DeepEqual(p.index[key], value) {
+		return
+	}
+	prev := p.index[key]
+	p.index[key] = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Index["+fmt.Sprint(key)+"]", reason, prev, value)
 	}
 }
 
@@ -515,6 +535,6 @@ func (p *ConfigPipePass) SetVariablesKey(key string, value interface{}, reason s
 	prev := p.variables[key]
 	p.variables[key] = value
 	if p._ledger != nil {
-		p._ledger.Log(p._path+".Variables[\""+key+"\"]", reason, prev, value)
+		p._ledger.Log(p._path+".Variables["+fmt.Sprint(key)+"]", reason, prev, value)
 	}
 }

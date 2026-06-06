@@ -56,4 +56,5 @@ type Trigger struct {
 	// Type-preservation test cases
 	Metadata map[string]string // Map with concrete value type
 	Priority *int              // pointer to int
+	Index    map[int]string    // Map with non-string key type
 }
