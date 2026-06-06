@@ -11,5 +11,6 @@ tasks:
   test:
     desc: Run tests
     cmds:
+      - go test -v -tags testdata -run=TestGenerateScaffolding
       - go test ./... -v -tags=test
       - go test ./... -v -tags=test -run=NONE -bench=. -benchmem
