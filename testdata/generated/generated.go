@@ -4,8 +4,10 @@ package generated
 
 import (
 	pipass "github.com/thumbrise/pipass"
+	testdata "github.com/thumbrise/pipass/testdata"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type StagePass interface {
@@ -19,12 +21,18 @@ type StagePass interface {
 	Triggers() []TriggerPass
 	MapTriggers(func(child TriggerPass) error) error
 	AppendTriggers(value TriggerPass, reason string)
-	Settings() interface{}
-	SetSettings(value interface{}, reason string)
+	Settings() ConfigPass
+	SetSettings(value ConfigPass, reason string)
 	IsActive() bool
 	SetIsActive(value bool, reason string)
-	CreatedAt() interface{}
-	SetCreatedAt(value interface{}, reason string)
+	CreatedAt() time.Time
+	SetCreatedAt(value time.Time, reason string)
+	Score() testdata.Score
+	SetScore(value testdata.Score, reason string)
+	Ratio() *float64
+	SetRatio(value *float64, reason string)
+	Template() *testdata.Template
+	SetTemplate(value *testdata.Template, reason string)
 }
 type StagePipePass struct {
 	_path     string
@@ -33,9 +41,12 @@ type StagePipePass struct {
 	title     string
 	actors    []*ActorPipePass
 	triggers  []*TriggerPipePass
-	settings  interface{}
+	settings  *ConfigPipePass
 	isActive  bool
-	createdAt interface{}
+	createdAt time.Time
+	score     testdata.Score
+	ratio     *float64
+	template  *testdata.Template
 }
 
 func NewStagePipePass(path string, ledger pipass.Ledger) *StagePipePass {
@@ -48,7 +59,7 @@ func (p *StagePipePass) ID() string {
 	return p.iD
 }
 func (p *StagePipePass) SetID(value string, reason string) {
-	if p.iD == value {
+	if reflect.DeepEqual(p.iD, value) {
 		return
 	}
 	prev := p.iD
@@ -61,7 +72,7 @@ func (p *StagePipePass) Title() string {
 	return p.title
 }
 func (p *StagePipePass) SetTitle(value string, reason string) {
-	if p.title == value {
+	if reflect.DeepEqual(p.title, value) {
 		return
 	}
 	prev := p.title
@@ -152,24 +163,29 @@ func (p *StagePipePass) AppendTriggers(value TriggerPass, reason string) {
 		}
 	}
 }
-func (p *StagePipePass) Settings() interface{} {
+func (p *StagePipePass) Settings() ConfigPass {
+	if p.settings == nil {
+		return nil
+	}
 	return p.settings
 }
-func (p *StagePipePass) SetSettings(value interface{}, reason string) {
-	if p.settings == value {
-		return
-	}
-	prev := p.settings
-	p.settings = value
-	if p._ledger != nil {
-		p._ledger.Log(p._path+".Settings", reason, prev, value)
+func (p *StagePipePass) SetSettings(value ConfigPass, reason string) {
+	concrete, ok := value.(*ConfigPipePass)
+	if ok && concrete != nil {
+		childPath := p._path + ".Settings"
+		concrete._path = childPath
+		concrete._ledger = p._ledger
+		p.settings = concrete
+		if p._ledger != nil {
+			p._ledger.Log(childPath, reason, nil, concrete)
+		}
 	}
 }
 func (p *StagePipePass) IsActive() bool {
 	return p.isActive
 }
 func (p *StagePipePass) SetIsActive(value bool, reason string) {
-	if p.isActive == value {
+	if reflect.DeepEqual(p.isActive, value) {
 		return
 	}
 	prev := p.isActive
@@ -178,17 +194,56 @@ func (p *StagePipePass) SetIsActive(value bool, reason string) {
 		p._ledger.Log(p._path+".IsActive", reason, prev, value)
 	}
 }
-func (p *StagePipePass) CreatedAt() interface{} {
+func (p *StagePipePass) CreatedAt() time.Time {
 	return p.createdAt
 }
-func (p *StagePipePass) SetCreatedAt(value interface{}, reason string) {
-	if p.createdAt == value {
+func (p *StagePipePass) SetCreatedAt(value time.Time, reason string) {
+	if reflect.DeepEqual(p.createdAt, value) {
 		return
 	}
 	prev := p.createdAt
 	p.createdAt = value
 	if p._ledger != nil {
 		p._ledger.Log(p._path+".CreatedAt", reason, prev, value)
+	}
+}
+func (p *StagePipePass) Score() testdata.Score {
+	return p.score
+}
+func (p *StagePipePass) SetScore(value testdata.Score, reason string) {
+	if reflect.DeepEqual(p.score, value) {
+		return
+	}
+	prev := p.score
+	p.score = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Score", reason, prev, value)
+	}
+}
+func (p *StagePipePass) Ratio() *float64 {
+	return p.ratio
+}
+func (p *StagePipePass) SetRatio(value *float64, reason string) {
+	if reflect.DeepEqual(p.ratio, value) {
+		return
+	}
+	prev := p.ratio
+	p.ratio = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Ratio", reason, prev, value)
+	}
+}
+func (p *StagePipePass) Template() *testdata.Template {
+	return p.template
+}
+func (p *StagePipePass) SetTemplate(value *testdata.Template, reason string) {
+	if reflect.DeepEqual(p.template, value) {
+		return
+	}
+	prev := p.template
+	p.template = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Template", reason, prev, value)
 	}
 }
 
@@ -199,6 +254,10 @@ type ActorPass interface {
 	SetRole(value string, reason string)
 	InventoryKey(key string) interface{}
 	SetInventoryKey(key string, value interface{}, reason string)
+	Nickname() *string
+	SetNickname(value *string, reason string)
+	IsHero() *bool
+	SetIsHero(value *bool, reason string)
 }
 type ActorPipePass struct {
 	_path     string
@@ -206,6 +265,8 @@ type ActorPipePass struct {
 	name      string
 	role      string
 	inventory map[string]interface{}
+	nickname  *string
+	isHero    *bool
 }
 
 func NewActorPipePass(path string, ledger pipass.Ledger) *ActorPipePass {
@@ -218,7 +279,7 @@ func (p *ActorPipePass) Name() string {
 	return p.name
 }
 func (p *ActorPipePass) SetName(value string, reason string) {
-	if p.name == value {
+	if reflect.DeepEqual(p.name, value) {
 		return
 	}
 	prev := p.name
@@ -231,7 +292,7 @@ func (p *ActorPipePass) Role() string {
 	return p.role
 }
 func (p *ActorPipePass) SetRole(value string, reason string) {
-	if p.role == value {
+	if reflect.DeepEqual(p.role, value) {
 		return
 	}
 	prev := p.role
@@ -241,9 +302,6 @@ func (p *ActorPipePass) SetRole(value string, reason string) {
 	}
 }
 func (p *ActorPipePass) InventoryKey(key string) interface{} {
-	if p.inventory == nil {
-		return nil
-	}
 	return p.inventory[key]
 }
 func (p *ActorPipePass) SetInventoryKey(key string, value interface{}, reason string) {
@@ -259,22 +317,54 @@ func (p *ActorPipePass) SetInventoryKey(key string, value interface{}, reason st
 		p._ledger.Log(p._path+".Inventory[\""+key+"\"]", reason, prev, value)
 	}
 }
+func (p *ActorPipePass) Nickname() *string {
+	return p.nickname
+}
+func (p *ActorPipePass) SetNickname(value *string, reason string) {
+	if reflect.DeepEqual(p.nickname, value) {
+		return
+	}
+	prev := p.nickname
+	p.nickname = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Nickname", reason, prev, value)
+	}
+}
+func (p *ActorPipePass) IsHero() *bool {
+	return p.isHero
+}
+func (p *ActorPipePass) SetIsHero(value *bool, reason string) {
+	if reflect.DeepEqual(p.isHero, value) {
+		return
+	}
+	prev := p.isHero
+	p.isHero = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".IsHero", reason, prev, value)
+	}
+}
 
 type TriggerPass interface {
 	Event() string
 	SetEvent(value string, reason string)
-	Actions() interface{}
-	SetActions(value interface{}, reason string)
+	Actions() []string
+	SetActions(value []string, reason string)
 	Children() []TriggerPass
 	MapChildren(func(child TriggerPass) error) error
 	AppendChildren(value TriggerPass, reason string)
+	MetadataKey(key string) string
+	SetMetadataKey(key string, value string, reason string)
+	Priority() *int
+	SetPriority(value *int, reason string)
 }
 type TriggerPipePass struct {
 	_path    string
 	_ledger  pipass.Ledger
 	event    string
-	actions  interface{}
+	actions  []string
 	children []*TriggerPipePass
+	metadata map[string]string
+	priority *int
 }
 
 func NewTriggerPipePass(path string, ledger pipass.Ledger) *TriggerPipePass {
@@ -287,7 +377,7 @@ func (p *TriggerPipePass) Event() string {
 	return p.event
 }
 func (p *TriggerPipePass) SetEvent(value string, reason string) {
-	if p.event == value {
+	if reflect.DeepEqual(p.event, value) {
 		return
 	}
 	prev := p.event
@@ -296,11 +386,11 @@ func (p *TriggerPipePass) SetEvent(value string, reason string) {
 		p._ledger.Log(p._path+".Event", reason, prev, value)
 	}
 }
-func (p *TriggerPipePass) Actions() interface{} {
+func (p *TriggerPipePass) Actions() []string {
 	return p.actions
 }
-func (p *TriggerPipePass) SetActions(value interface{}, reason string) {
-	if p.actions == value {
+func (p *TriggerPipePass) SetActions(value []string, reason string) {
+	if reflect.DeepEqual(p.actions, value) {
 		return
 	}
 	prev := p.actions
@@ -348,5 +438,83 @@ func (p *TriggerPipePass) AppendChildren(value TriggerPass, reason string) {
 		if p._ledger != nil {
 			p._ledger.Log(childPath, reason, nil, concreteChild)
 		}
+	}
+}
+func (p *TriggerPipePass) MetadataKey(key string) string {
+	return p.metadata[key]
+}
+func (p *TriggerPipePass) SetMetadataKey(key string, value string, reason string) {
+	if p.metadata == nil {
+		p.metadata = make(map[string]string)
+	}
+	if reflect.DeepEqual(p.metadata[key], value) {
+		return
+	}
+	prev := p.metadata[key]
+	p.metadata[key] = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Metadata[\""+key+"\"]", reason, prev, value)
+	}
+}
+func (p *TriggerPipePass) Priority() *int {
+	return p.priority
+}
+func (p *TriggerPipePass) SetPriority(value *int, reason string) {
+	if reflect.DeepEqual(p.priority, value) {
+		return
+	}
+	prev := p.priority
+	p.priority = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Priority", reason, prev, value)
+	}
+}
+
+type ConfigPass interface {
+	Scope() string
+	SetScope(value string, reason string)
+	VariablesKey(key string) interface{}
+	SetVariablesKey(key string, value interface{}, reason string)
+}
+type ConfigPipePass struct {
+	_path     string
+	_ledger   pipass.Ledger
+	scope     string
+	variables map[string]interface{}
+}
+
+func NewConfigPipePass(path string, ledger pipass.Ledger) *ConfigPipePass {
+	return &ConfigPipePass{
+		_ledger: ledger,
+		_path:   path,
+	}
+}
+func (p *ConfigPipePass) Scope() string {
+	return p.scope
+}
+func (p *ConfigPipePass) SetScope(value string, reason string) {
+	if reflect.DeepEqual(p.scope, value) {
+		return
+	}
+	prev := p.scope
+	p.scope = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Scope", reason, prev, value)
+	}
+}
+func (p *ConfigPipePass) VariablesKey(key string) interface{} {
+	return p.variables[key]
+}
+func (p *ConfigPipePass) SetVariablesKey(key string, value interface{}, reason string) {
+	if p.variables == nil {
+		p.variables = make(map[string]interface{})
+	}
+	if reflect.DeepEqual(p.variables[key], value) {
+		return
+	}
+	prev := p.variables[key]
+	p.variables[key] = value
+	if p._ledger != nil {
+		p._ledger.Log(p._path+".Variables[\""+key+"\"]", reason, prev, value)
 	}
 }

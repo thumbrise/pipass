@@ -3,8 +3,11 @@
 package pipass_test
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/thumbrise/pipass"
+	"github.com/thumbrise/pipass/testdata"
 	"github.com/thumbrise/pipass/testdata/generated"
 )
 
@@ -72,5 +75,39 @@ func TestPipassComplexHierarchy(t *testing.T) {
 
 	if len(ledger.paths) < 5 || ledger.paths[4] != "stage.Triggers[0].Children[0]" {
 		t.Errorf("recursive child tracking index or path calculated incorrectly: %v", ledger.paths)
+	}
+}
+
+func TestGeneratedTypePreservation(t *testing.T) {
+	out, err := pipass.Compile("generated", testdata.Stage{}, testdata.Actor{}, testdata.Trigger{}, testdata.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(out)
+
+	tests := []struct {
+		name     string
+		expected string
+	}{
+		{"CreatedAt -> time.Time", "CreatedAt() time.Time"},
+		{"Score -> testdata.Score", "Score() testdata.Score"},
+		{"Ratio -> *float64", "Ratio() *float64"},
+		{"Template -> *testdata.Template", "Template() *testdata.Template"},
+		{"Nickname -> *string", "Nickname() *string"},
+		{"IsHero -> *bool", "IsHero() *bool"},
+		{"MetadataKey -> string return", "MetadataKey(key string) string"},
+		{"Metadata -> map[string]string field", "metadata map[string]string"},
+		{"Priority -> *int", "Priority() *int"},
+		{"Settings -> ConfigPass singular", "Settings() ConfigPass"},
+		{"SetSettings singular", "SetSettings(value ConfigPass, reason string)"},
+		{"Config.Scope -> string", "Scope() string"},
+		{"Config.SetScope", "SetScope(value string, reason string)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !strings.Contains(src, tt.expected) {
+				t.Errorf("expected %q not found in generated code", tt.expected)
+			}
+		})
 	}
 }

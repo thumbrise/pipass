@@ -19,6 +19,7 @@ func TestGenerateScaffolding(t *testing.T) {
 		testdata.Stage{},
 		testdata.Actor{},
 		testdata.Trigger{},
+		testdata.Config{},
 	)
 	if err != nil {
 		t.Fatalf("pipeline test compile failure: %v", err)
