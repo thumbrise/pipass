@@ -1,0 +1,5 @@
+* text=auto
+*.go text
+*.js text
+*.json text
+*.yaml text
