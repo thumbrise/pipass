@@ -42,6 +42,7 @@ func (g *Generator) GenerateFields(root *Entity) {
 	generateStruct(g.file, structName, root)
 	generateConstructor(g.file, structName)
 	generateAccessors(g.file, structName, root)
+	generateDropMethods(g.file, structName)
 }
 
 func privateName(name string) string {
@@ -145,6 +146,10 @@ func generateInterface(f *jen.File, interfaceName string, root *Entity) {
 				grp.Id("Set"+field.Name).Params(jen.Id("value").Add(fieldStatement(field, true)), jen.Id("reason").String())
 			}
 		}
+
+		grp.Id("Drop").Params(jen.Id("reason").String())
+		grp.Id("Dropped").Params().Bool()
+		grp.Id("Undrop").Params(jen.Id("reason").String())
 	})
 }
 
@@ -152,6 +157,7 @@ func generateStruct(f *jen.File, structName string, root *Entity) {
 	f.Type().Id(structName).StructFunc(func(grp *jen.Group) {
 		grp.Id("_path").String()
 		grp.Id("_ledger").Qual(LedgerPkgPath(), "Ledger")
+		grp.Id("_dropped").Bool()
 
 		for _, field := range root.Fields {
 			grp.Id(privateName(field.Name)).Add(fieldStatement(field, false))
@@ -301,6 +307,42 @@ func generateMapMethods(f *jen.File, structName string, field Field) {
 					jen.Id("reason"),
 					jen.Id("prev"),
 					jen.Id("value"),
+				),
+			),
+		)
+}
+
+func generateDropMethods(f *jen.File, structName string) {
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Drop").
+		Params(jen.Id("reason").String()).
+		Block(
+			jen.If(jen.Id("p").Dot("_dropped")).Block(jen.Return()),
+			jen.Id("p").Dot("_dropped").Op("=").True(),
+			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
+				jen.Id("p").Dot("_ledger").Dot("Log").Params(
+					jen.Id("p").Dot("_path"),
+					jen.Id("reason"),
+					jen.Id("p"),
+					jen.Nil(),
+				),
+			),
+		)
+
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Dropped").
+		Params().Bool().
+		Block(jen.Return(jen.Id("p").Dot("_dropped")))
+
+	f.Func().Params(jen.Id("p").Op("*").Id(structName)).Id("Undrop").
+		Params(jen.Id("reason").String()).
+		Block(
+			jen.If(jen.Op("!").Id("p").Dot("_dropped")).Block(jen.Return()),
+			jen.Id("p").Dot("_dropped").Op("=").False(),
+			jen.If(jen.Id("p").Dot("_ledger").Op("!=").Nil()).Block(
+				jen.Id("p").Dot("_ledger").Dot("Log").Params(
+					jen.Id("p").Dot("_path"),
+					jen.Id("reason"),
+					jen.Nil(),
+					jen.Id("p"),
 				),
 			),
 		)

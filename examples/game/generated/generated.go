@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"fmt"
 	pipass "github.com/thumbrise/pipass"
 	userland "github.com/thumbrise/pipass/examples/game/userland"
 	"reflect"
@@ -26,10 +27,14 @@ type SessionPass interface {
 	AppendPlayers(value PlayerPass, reason string)
 	MetadataKey(key string) string
 	SetMetadataKey(key string, value string, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type SessionPipePass struct {
 	_path      string
 	_ledger    pipass.Ledger
+	_dropped   bool
 	iD         string
 	active     *bool
 	maxPlayers *int
@@ -104,6 +109,10 @@ func (p *SessionPipePass) Config() GameConfigPass {
 	return p.config
 }
 func (p *SessionPipePass) SetConfig(value GameConfigPass, reason string) {
+	if reflect.DeepEqual(p.config, value) {
+		return
+	}
+	prev := p.config
 	concrete, ok := value.(*GameConfigPipePass)
 	if ok && concrete != nil {
 		childPath := p._path + ".Config"
@@ -111,7 +120,7 @@ func (p *SessionPipePass) SetConfig(value GameConfigPass, reason string) {
 		concrete._ledger = p._ledger
 		p.config = concrete
 		if p._ledger != nil {
-			p._ledger.Log(childPath, reason, nil, concrete)
+			p._ledger.Log(childPath, reason, prev, concrete)
 		}
 	}
 }
@@ -169,7 +178,28 @@ func (p *SessionPipePass) SetMetadataKey(key string, value string, reason string
 	prev := p.metadata[key]
 	p.metadata[key] = value
 	if p._ledger != nil {
-		p._ledger.Log(p._path+".Metadata[\""+key+"\"]", reason, prev, value)
+		p._ledger.Log(p._path+".Metadata["+fmt.Sprint(key)+"]", reason, prev, value)
+	}
+}
+func (p *SessionPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *SessionPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *SessionPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
 	}
 }
 
@@ -180,10 +210,14 @@ type GameConfigPass interface {
 	SetTickRate(value float64, reason string)
 	Cheats() *bool
 	SetCheats(value *bool, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type GameConfigPipePass struct {
 	_path    string
 	_ledger  pipass.Ledger
+	_dropped bool
 	mode     string
 	tickRate float64
 	cheats   *bool
@@ -234,6 +268,27 @@ func (p *GameConfigPipePass) SetCheats(value *bool, reason string) {
 		p._ledger.Log(p._path+".Cheats", reason, prev, value)
 	}
 }
+func (p *GameConfigPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *GameConfigPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *GameConfigPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
+	}
+}
 
 type PlayerPass interface {
 	Name() string
@@ -244,14 +299,18 @@ type PlayerPass interface {
 	SetClass(value *string, reason string)
 	Stats() PlayerStatsPass
 	SetStats(value PlayerStatsPass, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type PlayerPipePass struct {
-	_path   string
-	_ledger pipass.Ledger
-	name    string
-	score   userland.Score
-	class   *string
-	stats   *PlayerStatsPipePass
+	_path    string
+	_ledger  pipass.Ledger
+	_dropped bool
+	name     string
+	score    userland.Score
+	class    *string
+	stats    *PlayerStatsPipePass
 }
 
 func NewPlayerPipePass(path string, ledger pipass.Ledger) *PlayerPipePass {
@@ -306,6 +365,10 @@ func (p *PlayerPipePass) Stats() PlayerStatsPass {
 	return p.stats
 }
 func (p *PlayerPipePass) SetStats(value PlayerStatsPass, reason string) {
+	if reflect.DeepEqual(p.stats, value) {
+		return
+	}
+	prev := p.stats
 	concrete, ok := value.(*PlayerStatsPipePass)
 	if ok && concrete != nil {
 		childPath := p._path + ".Stats"
@@ -313,8 +376,29 @@ func (p *PlayerPipePass) SetStats(value PlayerStatsPass, reason string) {
 		concrete._ledger = p._ledger
 		p.stats = concrete
 		if p._ledger != nil {
-			p._ledger.Log(childPath, reason, nil, concrete)
+			p._ledger.Log(childPath, reason, prev, concrete)
 		}
+	}
+}
+func (p *PlayerPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *PlayerPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *PlayerPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
 	}
 }
 
@@ -325,13 +409,17 @@ type PlayerStatsPass interface {
 	SetMP(value int, reason string)
 	Buffs() []string
 	SetBuffs(value []string, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type PlayerStatsPipePass struct {
-	_path   string
-	_ledger pipass.Ledger
-	hP      int
-	mP      int
-	buffs   []string
+	_path    string
+	_ledger  pipass.Ledger
+	_dropped bool
+	hP       int
+	mP       int
+	buffs    []string
 }
 
 func NewPlayerStatsPipePass(path string, ledger pipass.Ledger) *PlayerStatsPipePass {
@@ -377,5 +465,26 @@ func (p *PlayerStatsPipePass) SetBuffs(value []string, reason string) {
 	p.buffs = value
 	if p._ledger != nil {
 		p._ledger.Log(p._path+".Buffs", reason, prev, value)
+	}
+}
+func (p *PlayerStatsPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *PlayerStatsPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *PlayerStatsPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
 	}
 }
