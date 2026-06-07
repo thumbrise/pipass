@@ -34,10 +34,14 @@ type StagePass interface {
 	SetRatio(value *float64, reason string)
 	Template() *testdata.Template
 	SetTemplate(value *testdata.Template, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type StagePipePass struct {
 	_path     string
 	_ledger   pipass.Ledger
+	_dropped  bool
 	iD        string
 	title     string
 	actors    []*ActorPipePass
@@ -251,6 +255,27 @@ func (p *StagePipePass) SetTemplate(value *testdata.Template, reason string) {
 		p._ledger.Log(p._path+".Template", reason, prev, value)
 	}
 }
+func (p *StagePipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *StagePipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *StagePipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
+	}
+}
 
 type ActorPass interface {
 	Name() string
@@ -263,10 +288,14 @@ type ActorPass interface {
 	SetNickname(value *string, reason string)
 	IsHero() *bool
 	SetIsHero(value *bool, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type ActorPipePass struct {
 	_path     string
 	_ledger   pipass.Ledger
+	_dropped  bool
 	name      string
 	role      string
 	inventory map[string]interface{}
@@ -348,6 +377,27 @@ func (p *ActorPipePass) SetIsHero(value *bool, reason string) {
 		p._ledger.Log(p._path+".IsHero", reason, prev, value)
 	}
 }
+func (p *ActorPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *ActorPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *ActorPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
+	}
+}
 
 type TriggerPass interface {
 	Event() string
@@ -363,10 +413,14 @@ type TriggerPass interface {
 	SetPriority(value *int, reason string)
 	IndexKey(key int) string
 	SetIndexKey(key int, value string, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type TriggerPipePass struct {
 	_path    string
 	_ledger  pipass.Ledger
+	_dropped bool
 	event    string
 	actions  []string
 	children []*TriggerPipePass
@@ -493,16 +547,41 @@ func (p *TriggerPipePass) SetIndexKey(key int, value string, reason string) {
 		p._ledger.Log(p._path+".Index["+fmt.Sprint(key)+"]", reason, prev, value)
 	}
 }
+func (p *TriggerPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *TriggerPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *TriggerPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
+	}
+}
 
 type ConfigPass interface {
 	Scope() string
 	SetScope(value string, reason string)
 	VariablesKey(key string) interface{}
 	SetVariablesKey(key string, value interface{}, reason string)
+	Drop(reason string)
+	Dropped() bool
+	Undrop(reason string)
 }
 type ConfigPipePass struct {
 	_path     string
 	_ledger   pipass.Ledger
+	_dropped  bool
 	scope     string
 	variables map[string]interface{}
 }
@@ -540,5 +619,26 @@ func (p *ConfigPipePass) SetVariablesKey(key string, value interface{}, reason s
 	p.variables[key] = value
 	if p._ledger != nil {
 		p._ledger.Log(p._path+".Variables["+fmt.Sprint(key)+"]", reason, prev, value)
+	}
+}
+func (p *ConfigPipePass) Drop(reason string) {
+	if p._dropped {
+		return
+	}
+	p._dropped = true
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, p, nil)
+	}
+}
+func (p *ConfigPipePass) Dropped() bool {
+	return p._dropped
+}
+func (p *ConfigPipePass) Undrop(reason string) {
+	if !p._dropped {
+		return
+	}
+	p._dropped = false
+	if p._ledger != nil {
+		p._ledger.Log(p._path, reason, nil, p)
 	}
 }
